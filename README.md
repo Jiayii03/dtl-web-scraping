@@ -74,8 +74,6 @@ Verify the cron job:
 crontab -l
 ```
 
-Logs for the cron job will be stored in `logs/cron.log`.
-
 ---
 
 ## Logging
