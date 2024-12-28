@@ -36,6 +36,7 @@ def create_download_dir():
     :return: Path to the created directory.
     """
     current_time = datetime.now().strftime("%Y%m%d%H%M%S")
-    base_download_dir = f"./downloads/{current_time}"
+    base_path = os.path.dirname(os.path.abspath(__file__))  # Get the directory of the script
+    base_download_dir = os.path.join(base_path, "../downloads", current_time)
     os.makedirs(base_download_dir, exist_ok=True)
     return base_download_dir

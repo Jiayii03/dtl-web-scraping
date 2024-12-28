@@ -1,4 +1,5 @@
 import os
+import platform
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -15,6 +16,10 @@ def initialize_driver(download_dir=None):
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--start-maximized")
+    
+    # Enable headless only if running in WSL
+    if "microsoft-standard" in platform.uname().release:  # Detects WSL
+        options.add_argument("--headless")
 
     # Set Chrome preferences for downloads
     if download_dir:

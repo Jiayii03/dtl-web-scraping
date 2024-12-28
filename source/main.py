@@ -17,39 +17,18 @@ TODO:
 7. Add a README file to document the script's usage.
 8. Do regex matching to filter out the files to download.
 9. Implement checking mechanism to make sure all files are downloaded.
+10. Do test automation to verify the script's functionality. (optional)
 """
 
 import os
 import time
 import argparse
-from datetime import datetime
-from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
 from driver_setup import initialize_driver
 from util import access_webpage, check_all_files_downloaded, create_download_dir
 from constants import URL, DATE_DROPDOWN_INPUT_XPATH, DATE_CONTAINER_XPATH, SGX_SELECT_PICKER_OPTION_XPATH, DATA_DROPDOWN_INPUT_XPATH, DOWNLOAD_BUTTON_XPATH
-
-# function to check if all files are downloaded
-# def check_all_files_downloaded(directory_path):
-#     # check if all files are downloaded
-#     files = os.listdir(directory_path)
-#     if len(files) == DATA_FILES_NUM:
-#         return True
-    
-#     return False
-
-# # function to create a directory for downloads named after the current datetime
-# def create_download_dir():
-#     current_time = datetime.now().strftime("%Y%m%d%H%M%S")
-#     base_download_dir = f"./downloads/{current_time}"
-#     os.makedirs(base_download_dir, exist_ok=True)
-#     return base_download_dir 
 
 # Configure command-line arguments
 parser = argparse.ArgumentParser(description="Download files from SGX website.")
