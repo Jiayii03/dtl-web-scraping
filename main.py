@@ -9,15 +9,18 @@ python main.py --mode <mode>
 
 TODO:
 1. Modularise the script into functions.
-2. Add logging to track the script's progress.
-3. Schedule the script to run daily using a task scheduler.
+2. Schedule the script to run daily using a task scheduler.
+3. Add logging to track the script's progress.
 4. Implement error handling to manage exceptions.
 5. Think corner cases to improve the script's robustness.
 6. Add a requirements.txt file to manage dependencies.
 7. Add a README file to document the script's usage.
+8. Do regex matching to filter out the files to download.
+9. Implement checking mechanism to make sure all files are downloaded.
 """
 
 import os
+import time
 import argparse
 from datetime import datetime
 from selenium import webdriver
@@ -28,7 +31,25 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-import time
+from driver_setup import initialize_driver
+from util import access_webpage, check_all_files_downloaded, create_download_dir
+from constants import URL, DATE_DROPDOWN_INPUT_XPATH, DATE_CONTAINER_XPATH, SGX_SELECT_PICKER_OPTION_XPATH, DATA_DROPDOWN_INPUT_XPATH, DOWNLOAD_BUTTON_XPATH
+
+# function to check if all files are downloaded
+# def check_all_files_downloaded(directory_path):
+#     # check if all files are downloaded
+#     files = os.listdir(directory_path)
+#     if len(files) == DATA_FILES_NUM:
+#         return True
+    
+#     return False
+
+# # function to create a directory for downloads named after the current datetime
+# def create_download_dir():
+#     current_time = datetime.now().strftime("%Y%m%d%H%M%S")
+#     base_download_dir = f"./downloads/{current_time}"
+#     os.makedirs(base_download_dir, exist_ok=True)
+#     return base_download_dir 
 
 # Configure command-line arguments
 parser = argparse.ArgumentParser(description="Download files from SGX website.")
@@ -40,86 +61,60 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-# Configure Selenium WebDriver
-options = Options()
-options.add_argument("--disable-gpu")
-options.add_argument("--no-sandbox")
-options.add_argument("--start-maximized")
+# Initialize the WebDriver
+driver = initialize_driver()
 
-# Set up ChromeDriver service
-service = Service(ChromeDriverManager().install())
+# Create a directory for downloads
+base_download_dir = create_download_dir()
 
-# Dynamically create a directory for downloads named after the current datetime
-current_time = datetime.now().strftime("%Y%m%d%H%M%S")
-base_download_dir = f"./downloads/{current_time}"
-os.makedirs(base_download_dir, exist_ok=True)
-
-# Set Chrome preferences to save downloaded files in the new directory
-options.add_experimental_option("prefs", {
-    "download.prompt_for_download": False,
-    "download.directory_upgrade": True
-})
-
-# Initialize the driver with the updated options
-driver = webdriver.Chrome(service=service, options=options)
-
-# Target URL
-url = "https://www.sgx.com/research-education/derivatives"
-
-# Access the webpage
-try:
-    driver.get(url)
-    time.sleep(5)  # Wait for the page to load
-except Exception as e:
-    print(f"Error accessing the webpage: {e}")
-    driver.quit()
-    exit()
+# Access the webpage 
+access_webpage(driver, URL)
 
 try:
-    print("Locating date dropdown element...") 
-    date_dropdown_input_xpath = '//*[@id="page-container"]/template-base/div/div/section[1]/div/sgx-widgets-wrapper/widget-research-and-reports-download[1]/widget-reports-derivatives-tick-and-trade-cancellation/div/sgx-input-select[2]/label/span[2]/input'
-    
+    print("Locating date dropdown element...")
     date_dropdown_input = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, date_dropdown_input_xpath))
+        EC.element_to_be_clickable((By.XPATH, DATE_DROPDOWN_INPUT_XPATH))
     )
     print("Date dropdown located.")
     date_dropdown_input.click()
-    time.sleep(2)
+    time.sleep(1)
     
-    date_container_xpath = '//*[@id="sgx-select-dialog"]/div[2]/sgx-select-picker/sgx-list/div/div'
     date_container = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.XPATH, date_container_xpath))
+        EC.presence_of_element_located((By.XPATH, DATE_CONTAINER_XPATH))
     )
-    date_options = date_container.find_elements(By.XPATH, './/sgx-select-picker-option[@title and @data-key]')
+    date_options = date_container.find_elements(By.XPATH, SGX_SELECT_PICKER_OPTION_XPATH)
 
     if args.mode == "all":
         print(f"Found {len(date_options)} valid date options.")
     else:
         print("User selected only today's files. Using the default date.")
         date_options = date_options[:1]  # Use only the first (default) date
+        
+    DATE_NUM = len(date_options)
     
     date_dropdown_input.click()  # Close the dropdown
-    time.sleep(2)
+    time.sleep(1)
         
+    correct_dir = 0
     # Iterate through the date dropdown options
     for j, date_option in enumerate(date_options):
         try:
             # Open the date dropdown again for each iteration
             date_dropdown_input.click()
-            time.sleep(2)
+            time.sleep(1)
 
             # Refresh date container and options
             date_container = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, date_container_xpath))
+                EC.presence_of_element_located((By.XPATH, DATE_CONTAINER_XPATH))
             )
-            date_options = date_container.find_elements(By.XPATH, './/sgx-select-picker-option[@title and @data-key]')
+            date_options = date_container.find_elements(By.XPATH, SGX_SELECT_PICKER_OPTION_XPATH)
             date_option = date_options[j]
             date_title = date_option.get_attribute('title')
             print(f"Selecting date option {j + 1}: {date_title}")
 
             # Click the date option
             date_option.click()
-            time.sleep(2)
+            time.sleep(1)
             
              # Create a subdirectory for the current date
             date_download_dir = os.path.join(base_download_dir, date_title.replace(" ", "-"))
@@ -129,28 +124,25 @@ try:
                 "downloadPath": os.path.abspath(date_download_dir)
             })
 
-            # Locate data dropdown input
-            data_dropdown_input_xpath = '//*[@id="page-container"]/template-base/div/div/section[1]/div/sgx-widgets-wrapper/widget-research-and-reports-download[1]/widget-reports-derivatives-tick-and-trade-cancellation/div/sgx-input-select[1]/label/span[2]/input'
-
             # Wait for the data dropdown input to be clickable
             data_dropdown_input = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, data_dropdown_input_xpath))
+                EC.element_to_be_clickable((By.XPATH, DATA_DROPDOWN_INPUT_XPATH))
             )
             print("Data dropdown located.")
 
             # Open the data dropdown to fetch options
             data_dropdown_input.click()
-            time.sleep(2)
-
-            data_container_xpath = '//*[@id="sgx-select-dialog"]/div[2]/sgx-select-picker/sgx-list/div/div'
+            time.sleep(1)
+   
             data_container = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, data_container_xpath))
+                EC.presence_of_element_located((By.XPATH, DATE_CONTAINER_XPATH))
             )
-            data_options = data_container.find_elements(By.XPATH, './/sgx-select-picker-option[@title and @data-key]')
+            data_options = data_container.find_elements(By.XPATH, SGX_SELECT_PICKER_OPTION_XPATH)
             print(f"Found {len(data_options)} valid data options.")
+            DATA_FILES_NUM = len(data_options)
             
             data_dropdown_input.click()  # Close the dropdown
-            time.sleep(2)
+            time.sleep(1)
 
             # Iterate through the data dropdown options
             for i, data_option in enumerate(data_options):
@@ -159,13 +151,13 @@ try:
 
                     # Open the data dropdown for every iteration
                     data_dropdown_input.click()
-                    time.sleep(2)
+                    time.sleep(1)
 
                     # Refresh data container and options
                     data_container = WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((By.XPATH, data_container_xpath))
+                        EC.presence_of_element_located((By.XPATH, DATE_CONTAINER_XPATH))
                     )
-                    data_options = data_container.find_elements(By.XPATH, './/sgx-select-picker-option[@title and @data-key]')
+                    data_options = data_container.find_elements(By.XPATH, SGX_SELECT_PICKER_OPTION_XPATH)
                     data_option = data_options[i]
                     data_title = data_option.get_attribute('title')
                     print(f"Data Option {i + 1}: {data_title}")
@@ -173,13 +165,12 @@ try:
                     # Click the data option
                     data_option.click()
                     print(f"Data Option {i + 1} ('{data_title}') clicked.")
-                    time.sleep(2)
+                    time.sleep(1)
 
                     # Locate and click the download button
                     print("Locating download button...")
-                    download_button_xpath = '//*[@id="page-container"]/template-base/div/div/section[1]/div/sgx-widgets-wrapper/widget-research-and-reports-download[1]/widget-reports-derivatives-tick-and-trade-cancellation/div/button'
                     download_button = WebDriverWait(driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, download_button_xpath))
+                        EC.element_to_be_clickable((By.XPATH, DOWNLOAD_BUTTON_XPATH))
                     )
                     download_button.click()
                     print(f"File for data option {i + 1} ('{data_title}') downloaded successfully.")
@@ -190,80 +181,21 @@ try:
         except Exception as e:
             print(f"Error interacting with date option {j + 1}: {e}")
             continue  # Skip to the next date option if there's an error
-    
-    '''
-    
-    # Locate data dropdown input
-    print("Locating data dropdown element...")
-    data_dropdown_input_xpath = '//*[@id="page-container"]/template-base/div/div/section[1]/div/sgx-widgets-wrapper/widget-research-and-reports-download[1]/widget-reports-derivatives-tick-and-trade-cancellation/div/sgx-input-select[1]/label/span[2]/input'
-
-    # Wait for the data dropdown input to be clickable
-    data_dropdown_input = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, data_dropdown_input_xpath))
-    )
-    print("Data dropdown located.")
-    
-    # Open the data dropdown again for every iteration
-    data_dropdown_input.click()
-    time.sleep(2)  # Allow the data dropdown to load
-
-    # Locate the container for the options
-    container_xpath = '//*[@id="sgx-select-dialog"]/div[2]/sgx-select-picker/sgx-list/div/div'
-    container = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.XPATH, container_xpath))
-    )
-
-    # Locate all valid options dynamically
-    options = container.find_elements(By.XPATH, './/sgx-select-picker-option[@title and @data-key]')
-    print(f"Found {len(options)} valid dropdown options.")
-    data_dropdown_input.click() # Close the dropdown
-    time.sleep(2)
-    
-    # Iterate through the data dropdown options
-    for i in range(len(options)): 
-        try:
-            data_dropdown_input.click() # Open the data dropdown
-            time.sleep(4)  # Allow the data dropdown to load
-
-            print("Locating dropdown options...")
-            # Locate the container for the options
-            container = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, container_xpath))
-            )
-
-            # Locate all valid options dynamically
-            options = container.find_elements(By.XPATH, './/sgx-select-picker-option[@title and @data-key]')
-            print(f"Found {len(options)} valid dropdown options.")
-
-            # Locate the specific option for this iteration
-            option = options[i]  # Fetch the option dynamically by index
-            option_title = option.get_attribute('title')
-            print(f"Option {i + 1}: {option_title}")
-
-            # Click the option
-            option.click()
-            print(f"Option {i + 1} ('{option_title}') clicked.")
-            time.sleep(2)  # Allow time for any post-click actions
-
-            # Locate and click the download button
-            print("Locating download button...")
-            download_button_xpath = '//*[@id="page-container"]/template-base/div/div/section[1]/div/sgx-widgets-wrapper/widget-research-and-reports-download[1]/widget-reports-derivatives-tick-and-trade-cancellation/div/button'
-            download_button = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, download_button_xpath))
-            )
-
-            # Hover and click the download button
-            actions = ActionChains(driver)
-            actions.move_to_element(download_button).perform()
-            time.sleep(1)
-            download_button.click()
-            print(f"File for option {i + 1} ('{option_title}') downloaded successfully.")
+        
+        
+        all_files_downloaded = check_all_files_downloaded(date_download_dir, DATA_FILES_NUM)
+        if all_files_downloaded:
+            print(f"\033[92mAll files for date {date_title} have been downloaded.\033[0m")
+            correct_dir += 1
+        else:
+            print(f"\033[91mSome files for date {date_title} have not been downloaded.\033[0m")
             
-            time.sleep(5)  # Wait for the download to complete
-        except Exception as e:
-            print(f"Error interacting with option {i + 1}: {e}")
-            continue  # Skip to the next option if there's an error
-    '''
+    if correct_dir == DATE_NUM:
+        print("\033[92mChecking passed, all files have been downloaded\033[0m")
+        print(f"\033[92mExpected: {DATE_NUM}, found: {correct_dir}\033[0m")
+    else:
+        print("\033[91mChecking failed, some files have not been downloaded\033[0m")
+        print(f"\033[91mExpected: {DATE_NUM}, found: {correct_dir}\033[0m")
 
 except Exception as e:
     print(f"Error during dropdown interaction or file download: {e}")
