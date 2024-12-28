@@ -35,7 +35,7 @@ from constants import URL, DATE_DROPDOWN_INPUT_XPATH, DATE_CONTAINER_XPATH, SGX_
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 
-from config.logging import logger
+from config.logging import setup_logger
 
 # Configure command-line arguments
 parser = argparse.ArgumentParser(description="Download files from SGX website.")
@@ -45,7 +45,14 @@ parser.add_argument(
     required=True,
     help="Choose 'all' to download all historical files or 'today' for only today's files."
 )
+parser.add_argument(
+    "--debug",
+    action="store_true",
+    help="Enable debug mode to log all debug messages."
+)
 args = parser.parse_args()
+
+logger = setup_logger(debug=args.debug)
 
 # Initialize the WebDriver
 try:
@@ -72,6 +79,10 @@ except Exception as e:
 try:
     logger.info("==============================================================")
     logger.info("SCRIPT EXECUTION STARTED")
+    if args.debug:
+        logger.debug("DEBUG MODE ENABLED.")
+    else:
+        logger.info("DEBUG MODE DISABLED.")
     logger.info("TIMESTAMP: %s", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     logger.info("==============================================================")
 

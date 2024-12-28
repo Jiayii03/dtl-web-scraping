@@ -63,6 +63,30 @@ Example:
 python source/main.py --mode all
 ```
 
+### Logging Options
+You can enable debug-level logging using the `--debug` command line argument. This provides detailed logs for debugging purposes.
+
+Example:
+```bash
+python source/main.py --mode all --debug
+```
+
+**Logging Details:**
+- **Default Behavior**: Logs `INFO` level and above messages to the console and to `logs/script.log`.
+- **Debug Mode (`--debug`)**: Logs all `DEBUG` level messages in addition to the default behavior.
+- **Selenium Logs**: Logged separately in `logs/selenium.log` for better segregation of application and Selenium logs.
+
+### Log Files
+- **`logs/script.log`**: Contains application logs, including `DEBUG` (when `--debug` is used), `INFO`, `WARNING`, `ERROR`, and `CRITICAL` messages.
+- **`logs/selenium.log`**: Dedicated log file for Selenium-specific debugging information, such as HTTP requests and responses.
+
+Example to check logs:
+```bash
+tail -f logs/script.log
+```
+
+---
+
 ### Setting up the Cron Job
 Run the `setup_cron.sh` script to schedule the script.
 ```bash
@@ -73,12 +97,6 @@ Verify the cron job:
 ```bash
 crontab -l
 ```
-
----
-
-## Logging
-
-The project uses Python's `logging` module for detailed debugging and monitoring. Logs are written to both the console and the `logs/cron.log` file. Use the logs to troubleshoot any issues or verify successful runs.
 
 ---
 
