@@ -28,7 +28,7 @@ def check_all_files_downloaded(directory_path, expected_files_num):
     :return: True if all files are downloaded, False otherwise.
     """
     files = os.listdir(directory_path)
-    return len(files) == expected_files_num
+    return len(files) >= expected_files_num
 
 def create_download_dir():
     """

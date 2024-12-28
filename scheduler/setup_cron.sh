@@ -9,10 +9,13 @@
 #    sudo service cron start
 # 4. Install Python if not already installed:
 #    sudo apt install python3
-# 5. Run pip install -r requirements.txt to install the required packages.
-# 6. Make sure the Python script is executable and the path is correct:
+# 5. Create a virtual environment for the project and activate it:
+#    python3 -m venv /path/to/venv
+#    source /path/to/venv/bin/activate
+# 6. Needs chrome driver to be installed
+# 7. Run pip install -r requirements.txt to install the required packages.
+# 8. Make sure the Python script is executable and the path is correct:
 #    chmod +x /path/to/your_script.py
-# 7. Test the Python script manually to ensure it works before scheduling. 
 
 # How to use:
 # 1. Replace the paths in the script with the correct paths for your project.   
@@ -33,7 +36,8 @@ LOG_PATH="$PROJECT_PATH/logs/cron.log"
 VENV_PATH="$PROJECT_PATH/venv"
 
 # Add cron job to run the script every 30 minutes (for testing purposes)
-CRON_JOB="*/30 * * * * cd $PROJECT_PATH && source $VENV_PATH/bin/activate && /usr/bin/python3 $SCRIPT_PATH --mode all >> $LOG_PATH 2>&1"
+CRON_JOB="*/15 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode all >> $LOG_PATH 2>&1"
+# CRON_JOB="*/1 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python ./source/test.py >> $LOG_PATH 2>&1 && echo 'Cron job ran at $(date)' >> $LOG_PATH"
 
 # Check if the cron job already exists
 crontab -l | grep -F "$SCRIPT_PATH" > /dev/null

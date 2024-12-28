@@ -8,20 +8,20 @@ Run the script with the following command:
 python main.py --mode <mode>
 
 TODO:
-1. Modularise the script into functions.
-2. Schedule the script to run daily using a task scheduler.
-3. Add logging to track the script's progress.
-4. Implement error handling to manage exceptions.
-5. Think corner cases to improve the script's robustness.
-6. Add a requirements.txt file to manage dependencies.
-7. Add a README file to document the script's usage.
-8. Do regex matching to filter out the files to download.
-9. Implement checking mechanism to make sure all files are downloaded.
-10. Do test automation to verify the script's functionality. (optional)
+- Modularise the script into functions. (done)
+- Schedule the script to run daily using a task scheduler. (done)
+- Add logging to track the script's progress.
+- Do regex matching to filter out the files to download.
+- Think corner cases to improve the script's robustness, recovery plans 
+- Add a requirements.txt file to manage dependencies. (done)
+- Add a README file to document the script's usage. (done)
+- Implement checking mechanism to make sure all files are downloaded. (done)
+- Do test automation to verify the script's functionality. (optional)
 """
 
 import os
 import time
+from datetime import datetime
 import argparse
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -50,6 +50,9 @@ base_download_dir = create_download_dir()
 access_webpage(driver, URL)
 
 try:
+    print("\n-----------------------------------------------------------------")
+    print(f"RUNNING SCRIPT AT: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("-----------------------------------------------------------------\n")
     print("Locating date dropdown element...")
     date_dropdown_input = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.XPATH, DATE_DROPDOWN_INPUT_XPATH))

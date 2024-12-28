@@ -1,5 +1,5 @@
 /downloads
 /venv
 /logs
-/__pycache__
+/source/__pycache__
 /data_samples
