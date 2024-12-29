@@ -36,7 +36,8 @@ LOG_PATH="$PROJECT_PATH/logs/cron.log"
 VENV_PATH="$PROJECT_PATH/venv"
 
 # Add cron job to run the script every 30 minutes (for testing purposes)
-CRON_JOB="*/15 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode all >> $LOG_PATH 2>&1"
+CRON_JOB="*/10 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode all"
+# CRON_JOB="*/10 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode all >> $LOG_PATH 2>&1"
 # CRON_JOB="*/1 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python ./source/test.py >> $LOG_PATH 2>&1 && echo 'Cron job ran at $(date)' >> $LOG_PATH"
 
 # Check if the cron job already exists

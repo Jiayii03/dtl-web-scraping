@@ -10,7 +10,7 @@ python main.py --mode <mode>
 TODO:
 - Modularise the script into functions. (done)
 - Schedule the script to run daily using a task scheduler. (done)
-- Add logging to track the script's progress.
+- Add logging to track the script's progress. (done)
 - Do regex matching to filter out the files to keep. (done)
 - Think corner cases to improve the script's robustness, recovery plans 
 - Add a requirements.txt file to manage dependencies. (done)

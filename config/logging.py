@@ -12,9 +12,12 @@ def setup_logger(debug=False):
     # Main logger for your application
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG if debug else logging.INFO)
+    
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    log_dir = os.path.join(base_path, "../logs")
 
     # File handler for your script logs
-    file_handler = logging.FileHandler("../logs/script.log")
+    file_handler = logging.FileHandler(os.path.join(log_dir, "script.log"))
     file_handler.setLevel(logging.DEBUG if debug else logging.INFO)
     file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
     logger.addHandler(file_handler)
@@ -30,7 +33,7 @@ def setup_logger(debug=False):
     selenium_logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
     # File handler for Selenium logs
-    selenium_file_handler = logging.FileHandler("../logs/selenium.log")
+    selenium_file_handler = logging.FileHandler(os.path.join(log_dir, "selenium.log"))
     selenium_file_handler.setLevel(logging.DEBUG if debug else logging.INFO)
     selenium_file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
     selenium_logger.addHandler(selenium_file_handler)
