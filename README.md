@@ -109,7 +109,7 @@ crontab -l
 
 ---
 
-## Recovery Plan
+## Recovery Plans/Key Concerns
 
 ### Failed Downloads
 - **Automatic Reattempts**: Automatically reattempts failed downloads 3 times with delays between attempts.
@@ -119,13 +119,17 @@ crontab -l
 ### Historical Files
 - **Custom Date Range**: Use the `--mode custom` option to specify a historical date range for retrival from local storage.
 
-### Website Changes
-- **Handling Updates**: If SGX updates the website layout, the script may require updates to XPaths or interaction logic.
-- **Error Identification**: Logging will help identify errors caused by such changes.
-
 ### Server/Machine Downtime
 - **Automatic Cron Restart**: Configure the cron service to restart automatically after a reboot: `sudo systemctl enable cron`
 - **Recovery After Reboot**: Detect missed downloads and automatically run in `--mode recovery` after the system restarts.
+
+### Storage/Logging Overload
+- **Automated Cleanup**: Set up a cron job to delete/archive files older than a specified number of days.
+- **Log Rotation**: Use Python's `RotatingFileHandler` to limit log file size and maintain a fixed number of backup files.
+
+### Website Changes
+- **Handling Updates**: If SGX updates the website layout, the script may require updates to XPaths or interaction logic.
+- **Error Identification**: Logging will help identify errors caused by such changes.
 
 ---
 
