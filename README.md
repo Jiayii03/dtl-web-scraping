@@ -5,7 +5,7 @@
 
 ## Project Overview
 
-This project is designed to automate the daily download of derivative data from the Singapore Exchange (SGX) website. The script uses Selenium to interact with the website, providing options to either download today's files or historical files based on user input. Additionally, a cron job is set up to schedule the script to run daily. 
+This project automates the daily download of derivative data from the Singapore Exchange (SGX) website. The script uses Selenium to interact with the website and provides flexible command-line arguments for various modes of operation, including downloading today's files, historical files, or files based on a user-defined date range. A recovery mode reattempts failed downloads. The project integrates a cron job for scheduling and logging for monitoring and debugging.
 
 ---
 
@@ -55,12 +55,19 @@ python source/main.py --mode <mode>
 ```
 
 **Options for `--mode`:**
-- `today`: Downloads only today's files.
-- `all`: Downloads all historical files.
+- `listed`: Download all files available for each day as listed on the SGX website.
+- `today`: Download only today's files.
+- `historical`: Download all historical files.
+- `custom`: Download a specific file from the history.
+- `recovery`: Attempt all failed downloads within the last 5 days.
 
 Example:
 ```bash
-python source/main.py --mode all
+python source/main.py --mode listed
+python source/main.py --mode today
+python source/main.py --mode historical
+python source/main.py --mode custom
+python source/main.py --mode recovery
 ```
 
 ### Logging Options
@@ -68,7 +75,7 @@ You can enable debug-level logging using the `--debug` command line argument. Th
 
 Example:
 ```bash
-python source/main.py --mode all --debug
+python source/main.py --mode listed --debug
 ```
 
 **Logging Details:**
@@ -88,6 +95,8 @@ tail -f logs/script.log
 ---
 
 ### Setting up the Cron Job
+In `setup_cron.sh`, make sure to change these paths according to your local system: `PROJECT_PATH`, `SCRIPT_PATH`, and `VENV_PATH`.
+
 Run the `setup_cron.sh` script to schedule the script.
 ```bash
 ./scheduler/setup_cron.sh
@@ -102,9 +111,21 @@ crontab -l
 
 ## Recovery Plan
 
-- **Missed Downloads**: Use the `--mode all` option to recover missed files.
-- **Website Changes**: If SGX updates the website layout, the script may require updates to XPaths or logic.
-- **Historical Files**: The script cannot access files not listed on the website. Historical data beyond the available range will need manual intervention.
+### Failed Downloads
+- **Automatic Reattempts**: Automatically reattempts failed downloads 3 times with delays between attempts.
+- **Tracking Status**: Maintains a `download_status.json` file to track download status, logging successful and failed attempts.
+- **Recovery Mode**: The `--mode recovery` option will be run automatically if failed attempts are detected within the last 5 days without manual intervention. However, it can also be run manually when needed.
+
+### Historical Files
+- **Custom Date Range**: Use the `--mode custom` option to specify a historical date range for retrival from local storage.
+
+### Website Changes
+- **Handling Updates**: If SGX updates the website layout, the script may require updates to XPaths or interaction logic.
+- **Error Identification**: Logging will help identify errors caused by such changes.
+
+### Server/Machine Downtime
+- **Automatic Cron Restart**: Configure the cron service to restart automatically after a reboot: `sudo systemctl enable cron`
+- **Recovery After Reboot**: Detect missed downloads and automatically run in `--mode recovery` after the system restarts.
 
 ---
 

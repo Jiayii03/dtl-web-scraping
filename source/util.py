@@ -76,3 +76,24 @@ def clean_download_directory(directory_path):
             os.remove(file_path)  # Delete the file
         else:
             print(f"Valid file retained: {file_name}")
+            
+def log_initial_message(logger, a_debug, a_mode):
+    """
+    Log the initial message when the script starts.
+    """
+    logger.info("==============================================================")
+    logger.info("SCRIPT EXECUTION STARTED")
+    if a_debug:
+        logger.debug("DEBUG MODE ENABLED.")
+    else:
+        logger.info("DEBUG MODE DISABLED.")
+    if a_mode == "listed":
+        logger.info("MODE: LISTED")
+    elif a_mode == "today":
+        logger.info("MODE: TODAY")
+    elif a_mode == "historical":
+        logger.info("MODE: HISTORICAL")
+    elif a_mode == "custom":
+        logger.info("MODE: CUSTOM")
+    logger.info("TIMESTAMP: %s", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    logger.info("==============================================================")

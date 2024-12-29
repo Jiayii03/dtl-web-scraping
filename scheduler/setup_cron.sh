@@ -29,15 +29,12 @@ PROJECT_PATH="/mnt/c/Users/User/Documents/buidl/dtl/WebScrapingProject"
 # Define the Python script path relative to the project path
 SCRIPT_PATH="$PROJECT_PATH/source/main.py"
 
-# Define the log file path
-LOG_PATH="$PROJECT_PATH/logs/cron.log"
-
 # Path to the virtual environment
 VENV_PATH="$PROJECT_PATH/venv"
 
 # Add cron job to run the script every 30 minutes (for testing purposes)
-CRON_JOB="*/10 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode all"
-# CRON_JOB="*/10 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode all >> $LOG_PATH 2>&1"
+CRON_JOB="*/10 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode listed"
+# CRON_JOB="*/10 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode listed >> $LOG_PATH 2>&1"
 # CRON_JOB="*/1 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python ./source/test.py >> $LOG_PATH 2>&1 && echo 'Cron job ran at $(date)' >> $LOG_PATH"
 
 # Check if the cron job already exists

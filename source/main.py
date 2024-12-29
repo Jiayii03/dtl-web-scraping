@@ -12,7 +12,11 @@ TODO:
 - Schedule the script to run daily using a task scheduler. (done)
 - Add logging to track the script's progress. (done)
 - Do regex matching to filter out the files to keep. (done)
-- Think corner cases to improve the script's robustness, recovery plans 
+- Recovery plans, can do a flowchart.
+    - If a file download fails, reattempt the download a specified number of times with delays between attempts.
+    - Track download status, maintain a json of which dates were successfully downloaded and which ones failed.
+    - Allow the script to run in "recovery mode" to retry only the failed downloads.
+    - If user needs specific historical data, they can specify the date range to download from local storage.
 - Add a requirements.txt file to manage dependencies. (done)
 - Add a README file to document the script's usage. (done)
 - Implement checking mechanism to make sure all files are downloaded. (done)
@@ -28,7 +32,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from driver_setup import initialize_driver
-from util import access_webpage, check_all_files_downloaded, create_download_dir, clean_download_directory
+from util import access_webpage, check_all_files_downloaded, create_download_dir, clean_download_directory, log_initial_message
 from constants import URL, DATE_DROPDOWN_INPUT_XPATH, DATE_CONTAINER_XPATH, SGX_SELECT_PICKER_OPTION_XPATH, DATA_DROPDOWN_INPUT_XPATH, DOWNLOAD_BUTTON_XPATH
 
 # Add the project root to sys.path
@@ -41,9 +45,9 @@ from config.logging import setup_logger
 parser = argparse.ArgumentParser(description="Download files from SGX website.")
 parser.add_argument(
     "--mode",
-    choices=["all", "today"],
+    choices=["listed", "today", "historical", "custom", "recovery"],
     required=True,
-    help="Choose 'all' to download all historical files or 'today' for only today's files."
+    help="Select 'listed' to download all files available for each day as listed on the SGX website, 'today' to download only today's files, or 'historical' to download all historical files, 'custom' to download files for a specific date, or 'recovery' to retry failed downloads within the last 5 days."
 )
 parser.add_argument(
     "--debug",
@@ -77,15 +81,7 @@ except Exception as e:
     exit(1)
 
 try:
-    logger.info("==============================================================")
-    logger.info("SCRIPT EXECUTION STARTED")
-    if args.debug:
-        logger.debug("DEBUG MODE ENABLED.")
-    else:
-        logger.info("DEBUG MODE DISABLED.")
-    logger.info("TIMESTAMP: %s", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    logger.info("==============================================================")
-
+    log_initial_message(logger, args.debug, args.mode)
     logger.info("Locating date dropdown element...")
     date_dropdown_input = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.XPATH, DATE_DROPDOWN_INPUT_XPATH))
@@ -99,9 +95,9 @@ try:
     )
     date_options = date_container.find_elements(By.XPATH, SGX_SELECT_PICKER_OPTION_XPATH)
 
-    if args.mode == "all":
+    if args.mode == "listed":
         logger.info("Found %d valid date options.", len(date_options))
-    else:
+    elif args.mode == "today":
         logger.info("User selected only today's files. Using the default date.")
         date_options = date_options[:1]  # Use only the first (default) date
 
