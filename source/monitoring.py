@@ -7,7 +7,8 @@ import subprocess
 SCRIPT_LOG = os.path.abspath(os.path.join(os.path.dirname(__file__), '../logs/script.log'))
 MONITORING_LOG = os.path.abspath(os.path.join(os.path.dirname(__file__), '../logs/monitoring.log'))
 SCRAPING_SCRIPT = os.path.abspath(os.path.join(os.path.dirname(__file__), './main.py'))
-RECOVERY_DAYS = 5
+# RECOVERY_DAYS = 5 (in production)
+RECOVERY_DAYS = 1
 
 def setup_monitoring_logger():
     """Setup a logger for monitoring."""
@@ -23,13 +24,23 @@ def setup_monitoring_logger():
     return logger
 
 def parse_failed_logs(logger):
-    """Parse the log file for the most recent FAILED status in the last RECOVERY_DAYS."""
+    """Parse the log file for the most recent FAILED status and missing heartbeats in the last RECOVERY_DAYS."""
     failed_dates = {}
-    cutoff_date = datetime.now() - timedelta(days=RECOVERY_DAYS)
+    executed_dates = set()
+    cutoff_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=RECOVERY_DAYS)
 
     try:
         with open(SCRIPT_LOG, "r") as log:
             for line in log:
+                # Track SCRIPT EXECUTION STARTED logs to detect execution
+                if "SCRIPT EXECUTION STARTED" in line:
+                    match = re.search(r"(\d{4}-\d{2}-\d{2})", line)  # Match only the date portion
+                    if match:
+                        log_date = datetime.strptime(match.group(1), "%Y-%m-%d")  # Parse the date
+                        if log_date >= cutoff_date:
+                            executed_dates.add(match.group(1))  # Add the string representation of the date
+
+                # Track SCRIPT EXECUTION STATUS CHECK logs for FAILED status
                 if "SCRIPT EXECUTION STATUS CHECK" in line:
                     match = re.search(r"(\d{4}-\d{2}-\d{2})", line)
                     if match:
@@ -41,11 +52,18 @@ def parse_failed_logs(logger):
         logger.error("Script log file not found: %s", SCRIPT_LOG)
     except Exception as e:
         logger.error("Error while parsing logs: %s", e, exc_info=True)
-
+    
     # Extract only the dates where the latest log has a FAILED status
     final_failed_dates = {
         date for date, log in failed_dates.items() if "FAILED" in log
     }
+
+    # Detect missing execution dates
+    for day_offset in range(RECOVERY_DAYS):
+        date_to_check = (cutoff_date + timedelta(days=day_offset)).strftime('%Y-%m-%d')
+        if date_to_check not in executed_dates:
+            logger.warning("No SCRIPT EXECUTION STARTED log found for %s", date_to_check)
+            final_failed_dates.add(date_to_check)
 
     return final_failed_dates
 
@@ -66,9 +84,8 @@ if __name__ == "__main__":
     logger.info("Starting monitoring script...")
 
     failed_dates = parse_failed_logs(logger)
-    print(failed_dates)
     if failed_dates:
-        logger.info("Detected FAILED entries for the following dates: %s", ", ".join(failed_dates))
-        # trigger_recovery(failed_dates, logger)
+        logger.info("Detected FAILED entries or missing heartbeats for the following dates: %s", ", ".join(failed_dates))
+        trigger_recovery(failed_dates, logger)
     else:
-        logger.info("No FAILED entries detected in the last 5 days.")
+        logger.info("No FAILED entries or missing heartbeats detected in the last %s days.", RECOVERY_DAYS)

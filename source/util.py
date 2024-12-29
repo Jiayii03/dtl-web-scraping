@@ -96,8 +96,6 @@ def log_initial_message(logger, a_debug, a_mode):
         logger.info("MODE: LISTED")
     elif a_mode == "today":
         logger.info("MODE: TODAY")
-    elif a_mode == "historical":
-        logger.info("MODE: HISTORICAL")
     elif a_mode == "custom":
         logger.info("MODE: CUSTOM")
     elif a_mode == "recovery":

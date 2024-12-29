@@ -1,9 +1,6 @@
 """
 This script downloads files from the Singapore Exchange (SGX) website using Selenium WebDriver.
 
-Command-line arguments:
---mode: Choose 'all' to download all historical files or 'today' for only today's files.
-
 Run the script with the following command:
 python main.py --mode <mode>
 

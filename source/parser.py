@@ -10,9 +10,9 @@ def setup_parser():
     parser = argparse.ArgumentParser(description="Download files from SGX website.")
     parser.add_argument(
         "--mode",
-        choices=["listed", "today", "historical", "custom", "recovery"],
+        choices=["listed", "today", "custom", "recovery"],
         required=True,
-        help="Select 'listed' to download all files available for each day as listed on the SGX website, 'today' to download only today's files, or 'historical' to download all historical files, 'custom' to download files for a specific date, or 'recovery' to retry failed downloads within the last 5 days."
+        help="Select 'listed' to download all files available for each day as listed on the SGX website, 'today' to download only today's files, 'custom' to download files for a specific date, or 'recovery' to retry failed downloads within the last 5 days."
     )
     parser.add_argument(
         "--debug",
