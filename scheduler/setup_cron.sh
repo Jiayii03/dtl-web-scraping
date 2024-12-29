@@ -33,8 +33,10 @@ MONITOR_SCRIPT_PATH="$PROJECT_PATH/source/monitoring.py"
 # Path to the virtual environment
 VENV_PATH="$PROJECT_PATH/venv"
 
-CRON_JOB_DOWNLOAD="0 23 * * 1-5 cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode today"
-CRON_JOB_MONITOR="0 23 * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $MONITOR_SCRIPT_PATH"
+# CRON_JOB_DOWNLOAD="0 23 * * 1-5 cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode today"
+# CRON_JOB_MONITOR="0 23 * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $MONITOR_SCRIPT_PATH"
+CRON_JOB_DOWNLOAD="*/10 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode today"
+CRON_JOB_MONITOR="*/10 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $MONITOR_SCRIPT_PATH"
 
 # Function to add a cron job if it doesn't already exist
 add_cron_job() {

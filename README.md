@@ -57,7 +57,6 @@ python source/main.py --mode <mode>
 **Options for `--mode`:**
 - `listed`: Download all files available for each day as listed on the SGX website.
 - `today`: Download only today's files.
-- `historical`: Download all historical files.
 - `custom`: Download a specific file from the history.
 
 **In `custom` mode:, specify `--date`**
@@ -67,7 +66,6 @@ Example:
 ```bash
 python source/main.py --mode listed
 python source/main.py --mode today
-python source/main.py --mode historical
 python source/main.py --mode custom --date 2024-12-31
 ```
 
@@ -114,19 +112,19 @@ crontab -l
 
 ### Failed Downloads
 - **Automatic Reattempts**: Automatically reattempts failed downloads 3 times with delays between attempts.
-- **Tracking Status**: A cron job will be run daily to track past download status and detect failed downloads in `script.log`.
-- **Recovery Mode**: The `--mode recovery` option will be run automatically if failed attempts are detected within the last 5 days without manual intervention. However, it can also be run manually when needed.
-
-### Historical Files
-- **Custom Date Range**: Use the `--mode custom` option to specify a historical date range for retrival from local storage.
+- **Tracking Status**: A cron job will run `monitoring.py` daily to check historical download statuses and detect failed downloads in `script.log`.
+- **Recovery Mode**: The `--mode recovery` option will run automatically if failed attempts are detected within the last 5 days. It can also be run manually to recover data on specific dates when needed.
 
 ### Server/Machine Downtime
 - **Automatic Cron Restart**: Configure the cron service to restart automatically after a reboot: `sudo systemctl enable cron`
-- **Recovery After Reboot**: Detect missed downloads and automatically run in `--mode recovery` after the system restarts.
+- **Heartbeat check**: `monitoring.py` will also check for missing heartbeat logs (`SCRIPT EXECUTION STARTED`) on certain days. If no heartbeat is detected, it will assume a failure and trigger recovery.
 
 ### Storage/Logging Overload
 - **Automated Cleanup**: Set up a cron job to delete/archive files older than a specified number of days.
 - **Log Rotation**: Use Python's `RotatingFileHandler` to limit log file size and maintain a fixed number of backup files.
+
+### Historical Files
+- Since the cron job runs daily to download data and robust recovery plans are in place, all files are organized in separate directories named by `dates` in local file system. Therefore, it is possible to retrieve historical data from local storage even if it is no longer available on the SGX website.
 
 ### Website Changes
 - **Handling Updates**: If SGX updates the website layout, the script may require updates to XPaths or interaction logic.
