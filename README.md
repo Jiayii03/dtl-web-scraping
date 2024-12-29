@@ -110,6 +110,8 @@ crontab -l
 
 ## Recovery Plans/Key Concerns
 
+![Flowchart for Recovery Plan](images/Recovery_plan_flowchart.drawio.png)
+
 ### Failed Downloads
 - **Automatic Reattempts**: Automatically reattempts failed downloads 3 times with delays between attempts.
 - **Tracking Status**: A cron job will run `monitoring.py` daily to check historical download statuses and detect failed downloads in `script.log`.
