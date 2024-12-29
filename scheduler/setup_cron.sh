@@ -28,21 +28,28 @@ PROJECT_PATH="/mnt/c/Users/User/Documents/buidl/dtl/WebScrapingProject"
 
 # Define the Python script path relative to the project path
 SCRIPT_PATH="$PROJECT_PATH/source/main.py"
+MONITOR_SCRIPT_PATH="$PROJECT_PATH/source/monitoring.py"
 
 # Path to the virtual environment
 VENV_PATH="$PROJECT_PATH/venv"
 
-# Add cron job to run the script every 30 minutes (for testing purposes)
-CRON_JOB="*/10 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode today"
-# CRON_JOB="*/10 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode listed >> $LOG_PATH 2>&1"
-# CRON_JOB="*/1 * * * * cd $PROJECT_PATH && $VENV_PATH/bin/python ./source/test.py >> $LOG_PATH 2>&1 && echo 'Cron job ran at $(date)' >> $LOG_PATH"
+CRON_JOB_DOWNLOAD="0 23 * * 1-5 cd $PROJECT_PATH && $VENV_PATH/bin/python $SCRIPT_PATH --mode today"
+CRON_JOB_MONITOR="0 23 * * * cd $PROJECT_PATH && $VENV_PATH/bin/python $MONITOR_SCRIPT_PATH"
 
-# Check if the cron job already exists
-crontab -l | grep -F "$SCRIPT_PATH" > /dev/null
-if [ $? -eq 0 ]; then
-    echo "Cron job already exists."
-else
-    # Add the job to crontab
-    (crontab -l; echo "$CRON_JOB") | crontab -
-    echo "Cron job added successfully."
-fi
+# Function to add a cron job if it doesn't already exist
+add_cron_job() {
+    local job="$1"
+    crontab -l | grep -F "$job" > /dev/null
+    if [ $? -eq 0 ]; then
+        echo "Cron job already exists: $job"
+    else
+        (crontab -l; echo "$job") | crontab -
+        echo "Cron job added successfully: $job"
+    fi
+}
+
+# Add the cron jobs
+add_cron_job "$CRON_JOB_DOWNLOAD"
+add_cron_job "$CRON_JOB_MONITOR"
+
+echo "All cron jobs have been set up successfully."

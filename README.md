@@ -59,15 +59,16 @@ python source/main.py --mode <mode>
 - `today`: Download only today's files.
 - `historical`: Download all historical files.
 - `custom`: Download a specific file from the history.
-- `recovery`: Attempt all failed downloads within the last 5 days.
+
+**In `custom` mode:, specify `--date`**
+- `--date`: Specify a date in YYYY-MM-DD format.
 
 Example:
 ```bash
 python source/main.py --mode listed
 python source/main.py --mode today
 python source/main.py --mode historical
-python source/main.py --mode custom
-python source/main.py --mode recovery
+python source/main.py --mode custom --date 2024-12-31
 ```
 
 ### Logging Options
@@ -113,7 +114,7 @@ crontab -l
 
 ### Failed Downloads
 - **Automatic Reattempts**: Automatically reattempts failed downloads 3 times with delays between attempts.
-- **Tracking Status**: Maintains a `download_status.json` file to track download status, logging successful and failed attempts.
+- **Tracking Status**: A cron job will be run daily to track past download status and detect failed downloads in `script.log`.
 - **Recovery Mode**: The `--mode recovery` option will be run automatically if failed attempts are detected within the last 5 days without manual intervention. However, it can also be run manually when needed.
 
 ### Historical Files

@@ -26,11 +26,13 @@ TODO:
 import os
 import sys
 import time
+from datetime import datetime
 import argparse
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from driver_setup import initialize_driver
+from parser import setup_parser
 from util import access_webpage, check_all_files_downloaded, create_download_dir, clean_download_directory, log_initial_message, retry_download, locate_elements, click_and_wait
 from constants import URL, DATE_DROPDOWN_INPUT_XPATH, SGX_SELECT_PICKER_OPTION_XPATH, DATA_DROPDOWN_INPUT_XPATH, DOWNLOAD_BUTTON_XPATH
 
@@ -40,21 +42,7 @@ sys.path.insert(0, project_root)
 
 from config.logging import setup_logger
 
-# Configure command-line arguments
-parser = argparse.ArgumentParser(description="Download files from SGX website.")
-parser.add_argument(
-    "--mode",
-    choices=["listed", "today", "historical", "custom", "recovery"],
-    required=True,
-    help="Select 'listed' to download all files available for each day as listed on the SGX website, 'today' to download only today's files, or 'historical' to download all historical files, 'custom' to download files for a specific date, or 'recovery' to retry failed downloads within the last 5 days."
-)
-parser.add_argument(
-    "--debug",
-    action="store_true",
-    help="Enable debug mode to log all debug messages."
-)
-args = parser.parse_args()
-
+args = setup_parser()
 logger = setup_logger(debug=args.debug)
 
 if __name__ == "__main__":
@@ -63,6 +51,7 @@ if __name__ == "__main__":
         driver = initialize_driver()
     except Exception as e:
         logger.critical("Failed to initialize the WebDriver: %s", e, exc_info=True)
+        logger.critical("SCRIPT EXECUTION STATUS CHECK: Initialization - FAILED")
         exit(1)
 
     # Create a directory for downloads
@@ -70,6 +59,7 @@ if __name__ == "__main__":
         base_download_dir = create_download_dir()
     except Exception as e:
         logger.critical("Failed to create download directory: %s", e, exc_info=True)
+        logger.critical("SCRIPT EXECUTION STATUS CHECK: Directory Creation - FAILED")
         exit(1)
 
     # Access the webpage
@@ -77,6 +67,7 @@ if __name__ == "__main__":
         access_webpage(driver, URL)
     except Exception as e:
         logger.critical("Failed to access the webpage: %s", e, exc_info=True)
+        logger.critical("SCRIPT EXECUTION STATUS CHECK: Access Webpage - FAILED")
         driver.quit()
         exit(1)
 
@@ -96,12 +87,14 @@ if __name__ == "__main__":
         elif args.mode == "today":
             logger.info("User selected only today's files. Using the default date.")
             date_options = date_options[:1]  # Use only the first (default) date
+        elif args.mode == "recovery" or args.mode == "custom":
+            date_options = [date for date in date_options if date.get_attribute('title') == args.date]
+            logger.info("Found %d valid date options for recovery mode.", len(date_options))
 
         DATE_NUM = len(date_options)
 
         click_and_wait(date_dropdown_input, logger)  # Close the dropdown
 
-        correct_dir = 0
         # Iterate through the date dropdown options
         for j, date_option in enumerate(date_options):
             try:
@@ -156,28 +149,23 @@ if __name__ == "__main__":
 
                     retry_download(logger, download_data)
 
+                downloaded_files = os.listdir(date_download_dir)
+                clean_download_directory(date_download_dir)
+                
             except Exception as e:
                 logger.error("Error interacting with date option %d: %s", j + 1, e, exc_info=True)
+                logger.critical("SCRIPT EXECUTION STATUS CHECK: DOWNLOAD DATA - FAILED")
                 continue
-
-            clean_download_directory(date_download_dir)
-
+            
             all_files_downloaded = check_all_files_downloaded(date_download_dir, DATA_FILES_NUM)
             if all_files_downloaded:
-                logger.info("All files for date %s have been downloaded.", date_title)
-                correct_dir += 1
+                logger.info("SCRIPT EXECUTION STATUS CHECK: DOWNLOAD DATA - PASSED")
             else:
-                logger.warning("Some files for date %s have not been downloaded.", date_title)
-
-        if correct_dir == DATE_NUM:
-            logger.info("Checking passed, all files have been downloaded")
-            logger.info("Expected: %d, found: %d", DATE_NUM, correct_dir)
-        else:
-            logger.warning("Checking failed, some files have not been downloaded")
-            logger.warning("Expected: %d, found: %d", DATE_NUM, correct_dir)
+                logger.critical("SCRIPT EXECUTION STATUS CHECK: DOWNLOAD DATA - FAILED")
 
     except Exception as e:
         logger.critical("Error during dropdown interaction or file download: %s", e, exc_info=True)
+        logger.critical("SCRIPT EXECUTION STATUS CHECK: DOWNLOAD DATA - FAILED")
     finally:
         driver.quit()
         logger.info("Files downloaded to directory: %s", os.path.abspath(base_download_dir))

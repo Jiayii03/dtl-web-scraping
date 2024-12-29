@@ -1,6 +1,7 @@
 import os
 import re
 import time
+import json
 from datetime import datetime
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -99,6 +100,8 @@ def log_initial_message(logger, a_debug, a_mode):
         logger.info("MODE: HISTORICAL")
     elif a_mode == "custom":
         logger.info("MODE: CUSTOM")
+    elif a_mode == "recovery":
+        logger.info("MODE: RECOVERY")
     logger.info("TIMESTAMP: %s", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     logger.info("==============================================================")
 
@@ -131,3 +134,18 @@ def click_and_wait(element, logger, delay=1):
         time.sleep(delay)
     except Exception as e:
         logger.error("Failed to click element: %s", e, exc_info=True)
+        
+def convert_date_format(date_str):
+    """
+    Convert a date from YYYY-MM-DD format to '1 Dec 2024' format.
+    :param date_str: Date string in YYYY-MM-DD format.
+    :return: Date string in '1 Dec 2024' format.
+    """
+    try:
+        # Parse the input date string
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+        # Format the date with cross-platform compatible format
+        formatted_date = date_obj.strftime("%d %b %Y").lstrip("0").replace(" 0", " ")
+        return formatted_date
+    except ValueError:
+        raise ValueError("Invalid date format. Please use YYYY-MM-DD.")

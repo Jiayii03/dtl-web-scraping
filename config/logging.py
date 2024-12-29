@@ -6,9 +6,6 @@ def setup_logger(debug=False):
     Configure logging for the application.
     :param debug: Whether to enable debug mode for logging.
     """
-    # Ensure the logs directory exists
-    os.makedirs("logs", exist_ok=True)
-
     # Main logger for your application
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG if debug else logging.INFO)
