@@ -26,14 +26,13 @@ TODO:
 import os
 import sys
 import time
-from datetime import datetime
 import argparse
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from driver_setup import initialize_driver
-from util import access_webpage, check_all_files_downloaded, create_download_dir, clean_download_directory, log_initial_message
-from constants import URL, DATE_DROPDOWN_INPUT_XPATH, DATE_CONTAINER_XPATH, SGX_SELECT_PICKER_OPTION_XPATH, DATA_DROPDOWN_INPUT_XPATH, DOWNLOAD_BUTTON_XPATH
+from util import access_webpage, check_all_files_downloaded, create_download_dir, clean_download_directory, log_initial_message, retry_download, locate_elements, click_and_wait
+from constants import URL, DATE_DROPDOWN_INPUT_XPATH, SGX_SELECT_PICKER_OPTION_XPATH, DATA_DROPDOWN_INPUT_XPATH, DOWNLOAD_BUTTON_XPATH
 
 # Add the project root to sys.path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -58,151 +57,129 @@ args = parser.parse_args()
 
 logger = setup_logger(debug=args.debug)
 
-# Initialize the WebDriver
-try:
-    driver = initialize_driver()
-except Exception as e:
-    logger.critical("Failed to initialize the WebDriver: %s", e, exc_info=True)
-    exit(1)
+if __name__ == "__main__":
+    # Initialize the WebDriver
+    try:
+        driver = initialize_driver()
+    except Exception as e:
+        logger.critical("Failed to initialize the WebDriver: %s", e, exc_info=True)
+        exit(1)
 
-# Create a directory for downloads
-try:
-    base_download_dir = create_download_dir()
-except Exception as e:
-    logger.critical("Failed to create download directory: %s", e, exc_info=True)
-    exit(1)
+    # Create a directory for downloads
+    try:
+        base_download_dir = create_download_dir()
+    except Exception as e:
+        logger.critical("Failed to create download directory: %s", e, exc_info=True)
+        exit(1)
 
-# Access the webpage
-try:
-    access_webpage(driver, URL)
-except Exception as e:
-    logger.critical("Failed to access the webpage: %s", e, exc_info=True)
-    driver.quit()
-    exit(1)
+    # Access the webpage
+    try:
+        access_webpage(driver, URL)
+    except Exception as e:
+        logger.critical("Failed to access the webpage: %s", e, exc_info=True)
+        driver.quit()
+        exit(1)
 
-try:
-    log_initial_message(logger, args.debug, args.mode)
-    logger.info("Locating date dropdown element...")
-    date_dropdown_input = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, DATE_DROPDOWN_INPUT_XPATH))
-    )
-    logger.info("Date dropdown located.")
-    date_dropdown_input.click()
-    time.sleep(1)
+    try:
+        log_initial_message(logger, args.debug, args.mode)
+        logger.info("Locating date dropdown element...")
+        date_dropdown_input = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, DATE_DROPDOWN_INPUT_XPATH))
+        )
+        logger.info("Date dropdown located.")
+        click_and_wait(date_dropdown_input, logger)
 
-    date_container = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.XPATH, DATE_CONTAINER_XPATH))
-    )
-    date_options = date_container.find_elements(By.XPATH, SGX_SELECT_PICKER_OPTION_XPATH)
+        date_options = locate_elements(driver, SGX_SELECT_PICKER_OPTION_XPATH, logger)
 
-    if args.mode == "listed":
-        logger.info("Found %d valid date options.", len(date_options))
-    elif args.mode == "today":
-        logger.info("User selected only today's files. Using the default date.")
-        date_options = date_options[:1]  # Use only the first (default) date
+        if args.mode == "listed":
+            logger.info("Found %d valid date options.", len(date_options))
+        elif args.mode == "today":
+            logger.info("User selected only today's files. Using the default date.")
+            date_options = date_options[:1]  # Use only the first (default) date
 
-    DATE_NUM = len(date_options)
+        DATE_NUM = len(date_options)
 
-    date_dropdown_input.click()  # Close the dropdown
-    time.sleep(1)
+        click_and_wait(date_dropdown_input, logger)  # Close the dropdown
 
-    correct_dir = 0
-    # Iterate through the date dropdown options
-    for j, date_option in enumerate(date_options):
-        try:
-            date_dropdown_input.click()
-            time.sleep(1)
+        correct_dir = 0
+        # Iterate through the date dropdown options
+        for j, date_option in enumerate(date_options):
+            try:
+                click_and_wait(date_dropdown_input, logger)
 
-            date_container = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, DATE_CONTAINER_XPATH))
-            )
-            date_options = date_container.find_elements(By.XPATH, SGX_SELECT_PICKER_OPTION_XPATH)
-            date_option = date_options[j]
-            date_title = date_option.get_attribute('title')
-            logger.info("Selecting date option %d: %s", j + 1, date_title)
+                date_options = locate_elements(driver, SGX_SELECT_PICKER_OPTION_XPATH, logger)
+                date_option = date_options[j]
+                date_title = date_option.get_attribute('title')
+                logger.info("Selecting date option %d: %s", j + 1, date_title)
 
-            date_option.click()
-            time.sleep(1)
+                click_and_wait(date_option, logger)
 
-            date_download_dir = os.path.join(base_download_dir, date_title.replace(" ", "-"))
-            os.makedirs(date_download_dir, exist_ok=True)
-            driver.execute_cdp_cmd("Page.setDownloadBehavior", {
-                "behavior": "allow",
-                "downloadPath": os.path.abspath(date_download_dir)
-            })
+                date_download_dir = os.path.join(base_download_dir, date_title.replace(" ", "-"))
+                os.makedirs(date_download_dir, exist_ok=True)
+                driver.execute_cdp_cmd("Page.setDownloadBehavior", {
+                    "behavior": "allow",
+                    "downloadPath": os.path.abspath(date_download_dir)
+                })
 
-            data_dropdown_input = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, DATA_DROPDOWN_INPUT_XPATH))
-            )
-            logger.info("Data dropdown located.")
+                data_dropdown_input = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, DATA_DROPDOWN_INPUT_XPATH))
+                )
+                logger.info("Data dropdown located.")
 
-            data_dropdown_input.click()
-            time.sleep(1)
+                click_and_wait(data_dropdown_input, logger)
 
-            data_container = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, DATE_CONTAINER_XPATH))
-            )
-            data_options = data_container.find_elements(By.XPATH, SGX_SELECT_PICKER_OPTION_XPATH)
-            logger.info("Found %d valid data options.", len(data_options))
+                data_options = locate_elements(driver, SGX_SELECT_PICKER_OPTION_XPATH, logger)
+                logger.info("Found %d valid data options.", len(data_options))
 
-            DATA_FILES_NUM = len(data_options)
+                DATA_FILES_NUM = len(data_options)
 
-            data_dropdown_input.click()  # Close the dropdown
-            time.sleep(1)
+                click_and_wait(data_dropdown_input, logger)  # Close the dropdown
 
-            for i, data_option in enumerate(data_options):
-                try:
-                    logger.debug("Processing data option %d...", i + 1)
+                for i, data_option in enumerate(data_options):
+                    def download_data():
+                        click_and_wait(data_dropdown_input, logger)
 
-                    data_dropdown_input.click()
-                    time.sleep(1)
+                        data_options = locate_elements(driver, SGX_SELECT_PICKER_OPTION_XPATH, logger)
+                        data_option = data_options[i]
+                        data_title = data_option.get_attribute('title')
+                        logger.info("Data Option %d: %s", i + 1, data_title)
 
-                    data_container = WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((By.XPATH, DATE_CONTAINER_XPATH))
-                    )
-                    data_options = data_container.find_elements(By.XPATH, SGX_SELECT_PICKER_OPTION_XPATH)
-                    data_option = data_options[i]
-                    data_title = data_option.get_attribute('title')
-                    logger.info("Data Option %d: %s", i + 1, data_title)
+                        click_and_wait(data_option, logger)
+                        logger.info("Data Option %d ('%s') clicked.", i + 1, data_title)
 
-                    data_option.click()
-                    logger.info("Data Option %d ('%s') clicked.", i + 1, data_title)
-                    time.sleep(1)
+                        logger.info("Locating download button...")
+                        download_button = WebDriverWait(driver, 10).until(
+                            EC.element_to_be_clickable((By.XPATH, DOWNLOAD_BUTTON_XPATH))
+                        )
+                        click_and_wait(download_button, logger, delay=5)
+                        logger.info("File for data option %d ('%s') downloaded successfully.", i + 1, data_title)
 
-                    logger.info("Locating download button...")
-                    download_button = WebDriverWait(driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, DOWNLOAD_BUTTON_XPATH))
-                    )
-                    download_button.click()
-                    logger.info("File for data option %d ('%s') downloaded successfully.", i + 1, data_title)
-                    time.sleep(5)  # Wait for the download to complete
-                except Exception as e:
-                    logger.error("Error interacting with data option %d: %s", i + 1, e, exc_info=True)
-                    continue
+                    retry_download(logger, download_data)
 
-        except Exception as e:
-            logger.error("Error interacting with date option %d: %s", j + 1, e, exc_info=True)
-            continue
+            except Exception as e:
+                logger.error("Error interacting with date option %d: %s", j + 1, e, exc_info=True)
+                continue
 
-        clean_download_directory(date_download_dir)
+            clean_download_directory(date_download_dir)
 
-        all_files_downloaded = check_all_files_downloaded(date_download_dir, DATA_FILES_NUM)
-        if all_files_downloaded:
-            logger.info("All files for date %s have been downloaded.", date_title)
-            correct_dir += 1
+            all_files_downloaded = check_all_files_downloaded(date_download_dir, DATA_FILES_NUM)
+            if all_files_downloaded:
+                logger.info("All files for date %s have been downloaded.", date_title)
+                correct_dir += 1
+            else:
+                logger.warning("Some files for date %s have not been downloaded.", date_title)
+
+        if correct_dir == DATE_NUM:
+            logger.info("Checking passed, all files have been downloaded")
+            logger.info("Expected: %d, found: %d", DATE_NUM, correct_dir)
         else:
-            logger.warning("Some files for date %s have not been downloaded.", date_title)
+            logger.warning("Checking failed, some files have not been downloaded")
+            logger.warning("Expected: %d, found: %d", DATE_NUM, correct_dir)
 
-    if correct_dir == DATE_NUM:
-        logger.info("Checking passed, all files have been downloaded")
-        logger.info("Expected: %d, found: %d", DATE_NUM, correct_dir)
-    else:
-        logger.warning("Checking failed, some files have not been downloaded")
-        logger.warning("Expected: %d, found: %d", DATE_NUM, correct_dir)
+    except Exception as e:
+        logger.critical("Error during dropdown interaction or file download: %s", e, exc_info=True)
+    finally:
+        driver.quit()
+        logger.info("Files downloaded to directory: %s", os.path.abspath(base_download_dir))
 
-except Exception as e:
-    logger.critical("Error during dropdown interaction or file download: %s", e, exc_info=True)
-finally:
-    driver.quit()
-    logger.info("Files downloaded to directory: %s", os.path.abspath(base_download_dir))
 

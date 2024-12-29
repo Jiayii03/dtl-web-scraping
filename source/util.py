@@ -1,6 +1,10 @@
 import os
 import re
+import time
 from datetime import datetime
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 def access_webpage(driver, url, wait_time=5):
     """
@@ -97,3 +101,33 @@ def log_initial_message(logger, a_debug, a_mode):
         logger.info("MODE: CUSTOM")
     logger.info("TIMESTAMP: %s", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     logger.info("==============================================================")
+
+def retry_download(logger, function, max_attempts=3, delay=5, *args, **kwargs):
+    """Retry a function call up to a specified number of times."""
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return function(*args, **kwargs)
+        except Exception as e:
+            logger.warning("Attempt %d/%d failed: %s", attempt, max_attempts, e)
+            if attempt < max_attempts:
+                time.sleep(delay)
+    logger.error("All %d attempts failed for %s.", max_attempts, function.__name__)
+    return None
+
+def locate_elements(driver, xpath, logger, timeout=10):
+    """Locate elements using WebDriverWait."""
+    try:
+        return WebDriverWait(driver, timeout).until(
+            EC.presence_of_all_elements_located((By.XPATH, xpath))
+        )
+    except Exception as e:
+        logger.error("Failed to locate elements with XPath '%s': %s", xpath, e, exc_info=True)
+        return []
+    
+def click_and_wait(element, logger, delay=1):
+    """Click an element and wait for a specified delay."""
+    try:
+        element.click()
+        time.sleep(delay)
+    except Exception as e:
+        logger.error("Failed to click element: %s", e, exc_info=True)
